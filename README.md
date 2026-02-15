@@ -1,3 +1,5 @@
+> No longer hosted, feel free to self-host
+
 ![Otter Banner](assets/otter.png)
 
 # Otter

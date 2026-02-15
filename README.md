@@ -1,34 +1,45 @@
-# Otter (Self‑Hostable) — Powerful Discord Bot Starter
+> No longer hosted, feel free to self-host
 
-This is a **general purpose** Discord bot built with **Sapphire Framework** + **discord.js v14**.
-It’s designed to be easy to self-host and extend (similar philosophy to bots like Zeppelin: modular, permissioned, logged).
+![Otter Banner](assets/otter.png)
 
-## Features (included)
+# Otter
+Built with Sapphire Framework + discord.js v14. It’s designed to be easy to self-host and extend (similar philosophy to Zeppelin)
+
+## Features
 
 ### Self-host foundation
-- ✅ TypeScript (builds to `dist/`)
-- ✅ Sapphire Framework + discord.js v14
-- ✅ Environment validation (`zod`) + `.env.example`
-- ✅ SQLite persistence (`better-sqlite3`) with simple migrations
-- ✅ Docker + docker-compose for one-command deploy
+- TypeScript (builds to `dist/`)
+- Sapphire Framework + discord.js v14
+- Environment validation (`zod`) + `.env.example`
+- SQLite persistence (`better-sqlite3`) with simple migrations
+- Docker + docker-compose for one-command deploy
 
-### Moderation (slash commands)
-- ✅ `/kick` — kick a member (stores an infraction + posts to mod log)
-- ✅ `/ban` — ban a user (stores an infraction + posts to mod log)
-- ✅ `/mute` — mute a member by applying a configured mute role (stores an infraction + posts to mod log)
+### Moderation
+- `/kick` — kick a member (stores an infraction + posts to mod log)
+- `/ban` — ban a user (stores an infraction + posts to mod log)
+- `/mute` — mute a member by applying a configured mute role (stores an infraction + posts to mod log)
 
 ### Server configuration
-- ✅ `/config modlog` — set the moderation log channel
-- ✅ `/config muterole` — set the mute role used by `/mute`
+- `/config modlog` — set the moderation log channel
+- `/config muterole` — set the mute role used by `/mute`
 
 ### Mod log / auditing
-- ✅ Rich embed mod logs to a configured channel
-- ✅ Infraction records saved to SQLite (`infractions` table)
+- Rich embed mod logs to a configured channel
+- Infraction records saved to SQLite (`infractions` table)
+
+### Additional
+- Anti-raid: join spike detection + auto quarantine role (`/antiraid ...` + listener)
+- AutoMod management: list/create/delete basic keyword rules (`/automod ...`)
+- Role menus: self-assignable roles via select menu (`/rolemenu create`)
+- Welcome screens: basic welcome DM on join (listener)
+- Tickets: setup + panel + private channels + transcript file stored in SQLite (`/ticket setup`, `/ticket panel`)
+- Audit log view: quick “dashboard” of recent audit log entries (`/audit recent`)
+- Backups/export: export guild config + role menus + ticket config to JSON (`/backup export`)
 
 ### Developer experience
-- ✅ `npm run dev` hot-reloads using `tsx watch`
-- ✅ `npm run build` compiles TypeScript
-- ✅ Clean structure (`src/commands`, `src/listeners`, `src/lib`, `src/db`)
+- `npm run dev` hot-reloads using `tsx watch`
+- `npm run build` compiles TypeScript
+- Clean structure (`src/commands`, `src/listeners`, `src/lib`, `src/db`)
 
 ## Self-host
 
@@ -75,32 +86,4 @@ docker compose up -d --build
 - Add listeners under `src/listeners/...`
 - Store config / data via `src/db.ts`
 
-## Features (advanced modules included)
 
-These are implemented as lightweight MVP modules you can extend:
-- ✅ **Anti-raid**: join spike detection + auto quarantine role (`/antiraid ...` + listener)
-- ✅ **AutoMod management**: list/create/delete basic keyword rules (`/automod ...`)
-- ✅ **Role menus**: self-assignable roles via select menu (`/rolemenu create`)
-- ✅ **Welcome screens**: basic welcome DM on join (listener)
-- ✅ **Tickets**: setup + panel + private channels + transcript file stored in SQLite (`/ticket setup`, `/ticket panel`)
-- ✅ **Audit log view**: quick “dashboard” of recent audit log entries (`/audit recent`)
-- ✅ **Backups/export**: export guild config + role menus + ticket config to JSON (`/backup export`)
-
-## “Most powerful” roadmap (next upgrades)
-- Anti-raid: auto lockdown (disable invites, slowmode) + timed release from quarantine
-- AutoMod: more trigger types + alert channel + bypass roles
-- Tickets: add claim/assign + close reasons + transcript uploads to S3
-- Dashboard: web dashboard (Next.js) reading SQLite/Postgres
-- Backup: import/restore + scheduled backups
-
-## Access to the hosted bot
-This repository is for **self-hosting**.
-
-If you want access to the **official hosted Otter bot** (the one I run), message me on Discord:
-- **@arhan.424**
-
-(If you’re forking this, replace the line above with your own Discord contact.)
-
----
-
-Security note: keep your `.env` private.

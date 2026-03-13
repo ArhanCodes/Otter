@@ -79,7 +79,7 @@ function migrate(db: Db) {
       price REAL,
       category TEXT NOT NULL DEFAULT 'Other',
       condition TEXT NOT NULL DEFAULT 'Good',
-      location TEXT DEFAULT '',
+      country TEXT NOT NULL DEFAULT 'Other',
       description TEXT DEFAULT '',
       status TEXT NOT NULL DEFAULT 'active',
       created_at INTEGER NOT NULL
@@ -134,10 +134,10 @@ export const guildSettings = {
 };
 
 export const listings = {
-  add(db: Db, input: { guildId: string; userId: string; messageId?: string; type: string; title: string; price: number | null; category: string; condition: string; location: string; description: string }) {
+  add(db: Db, input: { guildId: string; userId: string; messageId?: string; type: string; title: string; price: number | null; category: string; condition: string; country: string; description: string }) {
     const info = db
-      .prepare('INSERT INTO listings (guild_id, user_id, message_id, type, title, price, category, condition, location, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(input.guildId, input.userId, input.messageId ?? null, input.type, input.title, input.price, input.category, input.condition, input.location, input.description, Date.now());
+      .prepare('INSERT INTO listings (guild_id, user_id, message_id, type, title, price, category, condition, country, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(input.guildId, input.userId, input.messageId ?? null, input.type, input.title, input.price, input.category, input.condition, input.country, input.description, Date.now());
     return info.lastInsertRowid;
   },
   setMessageId(db: Db, id: number | bigint, messageId: string) {
@@ -145,6 +145,12 @@ export const listings = {
   },
   getByUser(db: Db, guildId: string, userId: string) {
     return db.prepare('SELECT * FROM listings WHERE guild_id = ? AND user_id = ? AND status = ? ORDER BY created_at DESC').all(guildId, userId, 'active') as any[];
+  },
+  getByCountry(db: Db, guildId: string, country: string, category?: string | null) {
+    if (category) {
+      return db.prepare('SELECT * FROM listings WHERE guild_id = ? AND country = ? AND category = ? AND status = ? ORDER BY created_at DESC').all(guildId, country, category, 'active') as any[];
+    }
+    return db.prepare('SELECT * FROM listings WHERE guild_id = ? AND country = ? AND status = ? ORDER BY created_at DESC').all(guildId, country, 'active') as any[];
   },
   remove(db: Db, id: number, userId: string) {
     return db.prepare('UPDATE listings SET status = ? WHERE id = ? AND user_id = ?').run('removed', id, userId);

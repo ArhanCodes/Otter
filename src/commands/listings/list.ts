@@ -10,6 +10,24 @@ const TYPE_COLOURS: Record<string, number> = {
   Wanted: 0xf1c40f
 };
 
+const COUNTRY_FLAG: Record<string, string> = {
+  'UAE': '\u{1F1E6}\u{1F1EA}',
+  'United States': '\u{1F1FA}\u{1F1F8}',
+  'United Kingdom': '\u{1F1EC}\u{1F1E7}',
+  'Canada': '\u{1F1E8}\u{1F1E6}',
+  'Australia': '\u{1F1E6}\u{1F1FA}',
+  'India': '\u{1F1EE}\u{1F1F3}',
+  'Germany': '\u{1F1E9}\u{1F1EA}',
+  'France': '\u{1F1EB}\u{1F1F7}',
+  'Saudi Arabia': '\u{1F1F8}\u{1F1E6}',
+  'Singapore': '\u{1F1F8}\u{1F1EC}',
+  'Japan': '\u{1F1EF}\u{1F1F5}',
+  'South Korea': '\u{1F1F0}\u{1F1F7}',
+  'Brazil': '\u{1F1E7}\u{1F1F7}',
+  'Netherlands': '\u{1F1F3}\u{1F1F1}',
+  'Other': '\u{1F30D}'
+};
+
 @ApplyOptions<Command.Options>({
   description: 'List an item for sale, donation, or as wanted'
 })
@@ -33,15 +51,45 @@ export class UserCommand extends Command {
         .addStringOption((o) => o.setName('title').setDescription('Item title').setRequired(true))
         .addStringOption((o) =>
           o
+            .setName('country')
+            .setDescription('Your country')
+            .setRequired(true)
+            .addChoices(
+              { name: 'UAE', value: 'UAE' },
+              { name: 'United States', value: 'United States' },
+              { name: 'United Kingdom', value: 'United Kingdom' },
+              { name: 'Canada', value: 'Canada' },
+              { name: 'Australia', value: 'Australia' },
+              { name: 'India', value: 'India' },
+              { name: 'Germany', value: 'Germany' },
+              { name: 'France', value: 'France' },
+              { name: 'Saudi Arabia', value: 'Saudi Arabia' },
+              { name: 'Singapore', value: 'Singapore' },
+              { name: 'Japan', value: 'Japan' },
+              { name: 'South Korea', value: 'South Korea' },
+              { name: 'Brazil', value: 'Brazil' },
+              { name: 'Netherlands', value: 'Netherlands' },
+              { name: 'Other', value: 'Other' }
+            )
+        )
+        .addStringOption((o) =>
+          o
             .setName('category')
             .setDescription('Item category')
-            .setRequired(false)
+            .setRequired(true)
             .addChoices(
-              { name: 'Uniforms', value: 'Uniforms' },
+              { name: 'Electronics', value: 'Electronics' },
               { name: 'Books', value: 'Books' },
-              { name: 'Sports', value: 'Sports' },
-              { name: 'Stationery', value: 'Stationery' },
-              { name: 'Other', value: 'Other' }
+              { name: 'Video Games', value: 'Video Games' },
+              { name: 'Toys', value: 'Toys' },
+              { name: 'Household Items', value: 'Household Items' },
+              { name: 'Kitchen Items', value: 'Kitchen Items' },
+              { name: 'Furniture', value: 'Furniture' },
+              { name: 'Sports Equipment', value: 'Sports Equipment' },
+              { name: 'Clothing & Accessories', value: 'Clothing & Accessories' },
+              { name: 'Jewelry & Watches', value: 'Jewelry & Watches' },
+              { name: 'Board Games', value: 'Board Games' },
+              { name: 'Uniforms', value: 'Uniforms' }
             )
         )
         .addNumberOption((o) => o.setName('price').setDescription('Price (only for Sell/Donate)').setMinValue(0).setRequired(false))
@@ -58,7 +106,6 @@ export class UserCommand extends Command {
               { name: 'Any', value: 'Any' }
             )
         )
-        .addStringOption((o) => o.setName('location').setDescription('Location (e.g. Dubai)').setRequired(false))
         .addStringOption((o) => o.setName('description').setDescription('Description of the item').setRequired(false))
     );
   }
@@ -76,10 +123,10 @@ export class UserCommand extends Command {
 
     const type = interaction.options.getString('type', true);
     const title = interaction.options.getString('title', true);
-    const category = interaction.options.getString('category') ?? 'Other';
+    const country = interaction.options.getString('country', true);
+    const category = interaction.options.getString('category', true);
     const price = interaction.options.getNumber('price');
     const condition = interaction.options.getString('condition') ?? 'Good';
-    const location = interaction.options.getString('location') ?? '';
     const description = interaction.options.getString('description') ?? '';
 
     // Save to DB
@@ -91,30 +138,28 @@ export class UserCommand extends Command {
       price: type === 'Wanted' ? null : (price ?? 0),
       category,
       condition,
-      location,
+      country,
       description
     });
 
     // Build the listing embed
+    const flag = COUNTRY_FLAG[country] ?? '\u{1F30D}';
     const embed = new EmbedBuilder()
       .setTitle(title)
       .setColor(TYPE_COLOURS[type] ?? 0x95a5a6)
       .setAuthor({ name: interaction.user.tag, iconURL: interaction.user.displayAvatarURL() })
       .setTimestamp()
-      .setFooter({ text: `Listing #${listingId} | ${type}` });
+      .setFooter({ text: `Listing #${listingId} | ${type} | ${flag} ${country}` });
 
     const fields: { name: string; value: string; inline: boolean }[] = [
       { name: 'Type', value: type, inline: true },
       { name: 'Category', value: category, inline: true },
-      { name: 'Condition', value: condition, inline: true }
+      { name: 'Condition', value: condition, inline: true },
+      { name: 'Country', value: `${flag} ${country}`, inline: true }
     ];
 
     if (type !== 'Wanted' && price != null) {
       fields.push({ name: 'Price', value: price === 0 ? 'Free' : `$${price.toFixed(2)}`, inline: true });
-    }
-
-    if (location) {
-      fields.push({ name: 'Location', value: location, inline: true });
     }
 
     if (description) {

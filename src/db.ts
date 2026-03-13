@@ -21,6 +21,7 @@ function migrate(db: Db) {
       mod_log_channel_id TEXT,
       mute_role_id TEXT,
       quarantine_role_id TEXT,
+      listings_channel_id TEXT,
       anti_raid_enabled INTEGER DEFAULT 0,
       anti_raid_joins_per_min INTEGER DEFAULT 6
     );
@@ -67,7 +68,27 @@ function migrate(db: Db) {
       ticket_id INTEGER PRIMARY KEY,
       transcript TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS listings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      message_id TEXT,
+      type TEXT NOT NULL,
+      title TEXT NOT NULL,
+      price REAL,
+      category TEXT NOT NULL DEFAULT 'Other',
+      condition TEXT NOT NULL DEFAULT 'Good',
+      location TEXT DEFAULT '',
+      description TEXT DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'active',
+      created_at INTEGER NOT NULL
+    );
   `);
+
+  // Safe column additions for existing databases
+  try { db.exec('ALTER TABLE guild_settings ADD COLUMN listings_channel_id TEXT'); } catch { /* already exists */ }
+
 }
 
 export const guildSettings = {
@@ -96,12 +117,37 @@ export const guildSettings = {
        ON CONFLICT(guild_id) DO UPDATE SET quarantine_role_id=excluded.quarantine_role_id`
     ).run(guildId, roleId);
   },
+  setListingsChannel(db: Db, guildId: string, channelId: string | null) {
+    db.prepare(
+      `INSERT INTO guild_settings (guild_id, listings_channel_id)
+       VALUES (?, ?)
+       ON CONFLICT(guild_id) DO UPDATE SET listings_channel_id=excluded.listings_channel_id`
+    ).run(guildId, channelId);
+  },
   setAntiRaid(db: Db, guildId: string, input: { enabled: boolean; joinsPerMin: number }) {
     db.prepare(
       `INSERT INTO guild_settings (guild_id, anti_raid_enabled, anti_raid_joins_per_min)
        VALUES (?, ?, ?)
        ON CONFLICT(guild_id) DO UPDATE SET anti_raid_enabled=excluded.anti_raid_enabled, anti_raid_joins_per_min=excluded.anti_raid_joins_per_min`
     ).run(guildId, input.enabled ? 1 : 0, input.joinsPerMin);
+  }
+};
+
+export const listings = {
+  add(db: Db, input: { guildId: string; userId: string; messageId?: string; type: string; title: string; price: number | null; category: string; condition: string; location: string; description: string }) {
+    const info = db
+      .prepare('INSERT INTO listings (guild_id, user_id, message_id, type, title, price, category, condition, location, description, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(input.guildId, input.userId, input.messageId ?? null, input.type, input.title, input.price, input.category, input.condition, input.location, input.description, Date.now());
+    return info.lastInsertRowid;
+  },
+  setMessageId(db: Db, id: number | bigint, messageId: string) {
+    db.prepare('UPDATE listings SET message_id = ? WHERE id = ?').run(messageId, id);
+  },
+  getByUser(db: Db, guildId: string, userId: string) {
+    return db.prepare('SELECT * FROM listings WHERE guild_id = ? AND user_id = ? AND status = ? ORDER BY created_at DESC').all(guildId, userId, 'active') as any[];
+  },
+  remove(db: Db, id: number, userId: string) {
+    return db.prepare('UPDATE listings SET status = ? WHERE id = ? AND user_id = ?').run('removed', id, userId);
   }
 };
 

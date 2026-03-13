@@ -22,15 +22,15 @@ export class UserCommand extends Command {
         )
         .addSubcommand((sc) =>
           sc
-            .setName('muterole')
-            .setDescription('Set the mute role (used by /mute)')
-            .addRoleOption((o) => o.setName('role').setDescription('Role to use as mute').setRequired(true))
-        )
-        .addSubcommand((sc) =>
-          sc
             .setName('quarantine')
             .setDescription('Set the quarantine role (used by anti-raid)')
             .addRoleOption((o) => o.setName('role').setDescription('Role to use as quarantine').setRequired(true))
+        )
+        .addSubcommand((sc) =>
+          sc
+            .setName('listings')
+            .setDescription('Set the channel where listings are posted')
+            .addChannelOption((o) => o.setName('channel').setDescription('Channel to post listings').setRequired(true))
         )
     );
   }
@@ -47,16 +47,16 @@ export class UserCommand extends Command {
       return interaction.reply({ content: `Mod log channel set to <#${channel.id}>`, ephemeral: true });
     }
 
-    if (sub === 'muterole') {
-      const role = interaction.options.getRole('role', true);
-      guildSettings.setMuteRole(db, interaction.guildId, role.id);
-      return interaction.reply({ content: `Mute role set to <@&${role.id}>`, ephemeral: true });
-    }
-
     if (sub === 'quarantine') {
       const role = interaction.options.getRole('role', true);
       guildSettings.setQuarantineRole(db, interaction.guildId, role.id);
       return interaction.reply({ content: `Quarantine role set to <@&${role.id}>`, ephemeral: true });
+    }
+
+    if (sub === 'listings') {
+      const channel = interaction.options.getChannel('channel', true);
+      guildSettings.setListingsChannel(db, interaction.guildId, channel.id);
+      return interaction.reply({ content: `Listings channel set to <#${channel.id}>`, ephemeral: true });
     }
 
     return interaction.reply({ content: 'Unknown subcommand', ephemeral: true });

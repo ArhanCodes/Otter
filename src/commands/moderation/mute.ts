@@ -2,11 +2,11 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Command } from '@sapphire/framework';
 import { PermissionFlagsBits } from 'discord.js';
 import { container } from '@sapphire/framework';
-import { guildSettings, infractions } from '../../db.js';
+import { infractions } from '../../db.js';
 import { sendModLog } from '../../lib/modLog.js';
 
 @ApplyOptions<Command.Options>({
-  description: 'Mute a member (adds a configured mute role)',
+  description: 'Timeout a member using Discord timeout',
   requiredUserPermissions: [PermissionFlagsBits.ModerateMembers]
 })
 export class UserCommand extends Command {
@@ -14,8 +14,16 @@ export class UserCommand extends Command {
     registry.registerChatInputCommand((builder) =>
       builder
         .setName('mute')
-        .setDescription('Mute a member (requires /config muterole)')
-        .addUserOption((o) => o.setName('user').setDescription('User to mute').setRequired(true))
+        .setDescription('Timeout a member')
+        .addUserOption((o) => o.setName('user').setDescription('User to timeout').setRequired(true))
+        .addIntegerOption((o) =>
+          o
+            .setName('duration')
+            .setDescription('Duration in minutes (default: 5)')
+            .setMinValue(1)
+            .setMaxValue(40320)
+            .setRequired(false)
+        )
         .addStringOption((o) => o.setName('reason').setDescription('Reason').setRequired(false))
     );
   }
@@ -24,27 +32,28 @@ export class UserCommand extends Command {
     if (!interaction.inCachedGuild()) return interaction.reply({ content: 'Guild only.', ephemeral: true });
 
     const user = interaction.options.getUser('user', true);
+    const durationMinutes = interaction.options.getInteger('duration') ?? 5;
     const reason = interaction.options.getString('reason');
-
-    const settings = guildSettings.get(container.db, interaction.guildId);
-    const muteRoleId = settings.mute_role_id as string | null;
-    if (!muteRoleId) return interaction.reply({ content: 'Mute role not set. Run `/config muterole` first.', ephemeral: true });
 
     const member = await interaction.guild.members.fetch(user.id).catch(() => null);
     if (!member) return interaction.reply({ content: 'User not in this guild.', ephemeral: true });
 
-    await member.roles.add(muteRoleId, reason ?? undefined);
+    const durationMs = durationMinutes * 60 * 1000;
+    await member.timeout(durationMs, reason ?? undefined);
 
-    infractions.add(container.db, { guildId: interaction.guildId, userId: user.id, modId: interaction.user.id, type: 'mute', reason });
+    infractions.add(container.db, { guildId: interaction.guildId, userId: user.id, modId: interaction.user.id, type: 'timeout', reason });
 
     await sendModLog({
       db: container.db,
       guild: interaction.guild,
-      title: 'Member muted',
-      description: `${user.tag} was muted by ${interaction.user.tag}`,
-      fields: reason ? [{ name: 'Reason', value: reason }] : undefined
+      title: 'Member timed out',
+      description: `${user.tag} was timed out by ${interaction.user.tag}`,
+      fields: [
+        { name: 'Duration', value: `${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}`, inline: true },
+        ...(reason ? [{ name: 'Reason', value: reason, inline: false }] : [])
+      ]
     });
 
-    return interaction.reply({ content: `Muted **${user.tag}**`, ephemeral: true });
+    return interaction.reply({ content: `Timed out **${user.tag}** for ${durationMinutes} minute${durationMinutes === 1 ? '' : 's'}`, ephemeral: true });
   }
 }

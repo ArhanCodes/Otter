@@ -1,6 +1,6 @@
 import '@sapphire/plugin-logger/register';
 
-import { ApplicationCommandRegistries, LogLevel, SapphireClient } from '@sapphire/framework';
+import { ApplicationCommandRegistries, RegisterBehavior, LogLevel, SapphireClient } from '@sapphire/framework';
 import { GatewayIntentBits, Partials } from 'discord.js';
 
 import { env, ownersList } from './env.js';
@@ -9,6 +9,7 @@ import { container } from '@sapphire/framework';
 
 // Register commands to specific guild(s) for instant updates
 ApplicationCommandRegistries.setDefaultGuildIds(['1480524541645295700']);
+ApplicationCommandRegistries.setDefaultBehaviorWhenNotIdentical(RegisterBehavior.BulkOverwrite);
 
 container.db = openDb();
 

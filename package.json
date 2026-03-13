@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "main": "dist/index.js",
   "description": "General-purpose, self-hostable Discord bot template (Sapphire + discord.js)",
   "scripts": {
     "dev": "tsx watch src/index.ts",

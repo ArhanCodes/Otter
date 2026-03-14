@@ -88,6 +88,10 @@ function migrate(db: Db) {
 
   // Safe column additions for existing databases
   try { db.exec('ALTER TABLE guild_settings ADD COLUMN listings_channel_id TEXT'); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE listings ADD COLUMN country TEXT NOT NULL DEFAULT \'Other\''); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE listings ADD COLUMN category TEXT NOT NULL DEFAULT \'Other\''); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE listings ADD COLUMN condition TEXT NOT NULL DEFAULT \'Good\''); } catch { /* already exists */ }
+  try { db.exec('ALTER TABLE listings ADD COLUMN description TEXT DEFAULT \'\''); } catch { /* already exists */ }
 
 }
 

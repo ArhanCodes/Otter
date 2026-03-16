@@ -79,17 +79,14 @@ export class UserCommand extends Command {
             .setRequired(true)
             .addChoices(
               { name: 'Electronics', value: 'Electronics' },
-              { name: 'Books', value: 'Books' },
               { name: 'Video Games', value: 'Video Games' },
-              { name: 'Toys', value: 'Toys' },
-              { name: 'Household Items', value: 'Household Items' },
-              { name: 'Kitchen Items', value: 'Kitchen Items' },
-              { name: 'Furniture', value: 'Furniture' },
+              { name: 'Board Games & Card Games', value: 'Board Games & Card Games' },
+              { name: 'Books & Comics', value: 'Books & Comics' },
+              { name: 'Clothing & Shoes', value: 'Clothing & Shoes' },
+              { name: 'Collectibles & Trading Cards', value: 'Collectibles & Trading Cards' },
               { name: 'Sports Equipment', value: 'Sports Equipment' },
-              { name: 'Clothing & Accessories', value: 'Clothing & Accessories' },
-              { name: 'Jewelry & Watches', value: 'Jewelry & Watches' },
-              { name: 'Board Games', value: 'Board Games' },
-              { name: 'Uniforms', value: 'Uniforms' }
+              { name: 'Art & Craft Supplies', value: 'Art & Craft Supplies' },
+              { name: 'Music & Instruments', value: 'Music & Instruments' }
             )
         )
         .addNumberOption((o) => o.setName('price').setDescription('Price (only for Sell/Donate)').setMinValue(0).setRequired(false))

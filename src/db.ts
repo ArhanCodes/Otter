@@ -69,6 +69,17 @@ function migrate(db: Db) {
       transcript TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS fortnite_feeds (
+      guild_id TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      PRIMARY KEY (guild_id, channel_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS fortnite_state (
+      key TEXT PRIMARY KEY,
+      hash TEXT NOT NULL
+    );
+
     CREATE TABLE IF NOT EXISTS listings (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       guild_id TEXT NOT NULL,
@@ -158,6 +169,33 @@ export const listings = {
   },
   remove(db: Db, id: number, userId: string) {
     return db.prepare('UPDATE listings SET status = ? WHERE id = ? AND user_id = ?').run('removed', id, userId);
+  }
+};
+
+export const fortniteFeeds = {
+  add(db: Db, guildId: string, channelId: string) {
+    db.prepare(
+      'INSERT OR IGNORE INTO fortnite_feeds (guild_id, channel_id) VALUES (?, ?)'
+    ).run(guildId, channelId);
+  },
+  remove(db: Db, guildId: string, channelId: string) {
+    db.prepare('DELETE FROM fortnite_feeds WHERE guild_id = ? AND channel_id = ?').run(guildId, channelId);
+  },
+  getAll(db: Db) {
+    return db.prepare('SELECT * FROM fortnite_feeds').all() as { guild_id: string; channel_id: string }[];
+  },
+  getForGuild(db: Db, guildId: string) {
+    return db.prepare('SELECT * FROM fortnite_feeds WHERE guild_id = ?').all(guildId) as { guild_id: string; channel_id: string }[];
+  }
+};
+
+export const fortniteState = {
+  getHash(db: Db, key: string): string | null {
+    const row = db.prepare('SELECT hash FROM fortnite_state WHERE key = ?').get(key) as { hash: string } | undefined;
+    return row?.hash ?? null;
+  },
+  setHash(db: Db, key: string, hash: string) {
+    db.prepare('INSERT INTO fortnite_state (key, hash) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET hash=excluded.hash').run(key, hash);
   }
 };
 

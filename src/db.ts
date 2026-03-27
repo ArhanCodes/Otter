@@ -95,6 +95,29 @@ function migrate(db: Db) {
       status TEXT NOT NULL DEFAULT 'active',
       created_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS ai_config (
+      guild_id TEXT PRIMARY KEY,
+      enabled INTEGER NOT NULL DEFAULT 0,
+      system_prompt TEXT,
+      model TEXT,
+      max_history INTEGER NOT NULL DEFAULT 25
+    );
+
+    CREATE TABLE IF NOT EXISTS ai_messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      guild_id TEXT NOT NULL,
+      channel_id TEXT NOT NULL,
+      user_id TEXT NOT NULL,
+      message_id TEXT NOT NULL UNIQUE,
+      role TEXT NOT NULL,
+      content TEXT NOT NULL,
+      parent_message_id TEXT,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ai_messages_channel ON ai_messages(channel_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_messages_parent ON ai_messages(parent_message_id);
   `);
 
   // Safe column additions for existing databases
@@ -205,5 +228,90 @@ export const infractions = {
       .prepare('INSERT INTO infractions (guild_id, user_id, mod_id, type, reason, created_at) VALUES (?, ?, ?, ?, ?, ?)')
       .run(input.guildId, input.userId, input.modId, input.type, input.reason ?? null, Date.now());
     return info.lastInsertRowid;
+  }
+};
+
+export interface AiConfig {
+  guild_id: string;
+  enabled: number;
+  system_prompt: string | null;
+  model: string | null;
+  max_history: number;
+}
+
+export const aiConfig = {
+  get(db: Db, guildId: string): AiConfig {
+    const row = db.prepare('SELECT * FROM ai_config WHERE guild_id = ?').get(guildId) as AiConfig | undefined;
+    return row ?? { guild_id: guildId, enabled: 0, system_prompt: null, model: null, max_history: 25 };
+  },
+  setEnabled(db: Db, guildId: string, enabled: boolean) {
+    db.prepare(
+      `INSERT INTO ai_config (guild_id, enabled)
+       VALUES (?, ?)
+       ON CONFLICT(guild_id) DO UPDATE SET enabled=excluded.enabled`
+    ).run(guildId, enabled ? 1 : 0);
+  },
+  setSystemPrompt(db: Db, guildId: string, prompt: string | null) {
+    db.prepare(
+      `INSERT INTO ai_config (guild_id, system_prompt)
+       VALUES (?, ?)
+       ON CONFLICT(guild_id) DO UPDATE SET system_prompt=excluded.system_prompt`
+    ).run(guildId, prompt);
+  },
+  setModel(db: Db, guildId: string, model: string | null) {
+    db.prepare(
+      `INSERT INTO ai_config (guild_id, model)
+       VALUES (?, ?)
+       ON CONFLICT(guild_id) DO UPDATE SET model=excluded.model`
+    ).run(guildId, model);
+  },
+  setMaxHistory(db: Db, guildId: string, max: number) {
+    db.prepare(
+      `INSERT INTO ai_config (guild_id, max_history)
+       VALUES (?, ?)
+       ON CONFLICT(guild_id) DO UPDATE SET max_history=excluded.max_history`
+    ).run(guildId, max);
+  }
+};
+
+export interface AiMessage {
+  id: number;
+  guild_id: string;
+  channel_id: string;
+  user_id: string;
+  message_id: string;
+  role: string;
+  content: string;
+  parent_message_id: string | null;
+  created_at: number;
+}
+
+export const aiMessages = {
+  add(db: Db, input: { guildId: string; channelId: string; userId: string; messageId: string; role: string; content: string; parentMessageId?: string | null }) {
+    db.prepare(
+      'INSERT OR IGNORE INTO ai_messages (guild_id, channel_id, user_id, message_id, role, content, parent_message_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(input.guildId, input.channelId, input.userId, input.messageId, input.role, input.content, input.parentMessageId ?? null, Date.now());
+  },
+  getConversation(db: Db, messageId: string, limit: number): AiMessage[] {
+    // Walk up the parent chain to build conversation history
+    const rows = db.prepare(`
+      WITH RECURSIVE convo AS (
+        SELECT * FROM ai_messages WHERE message_id = ?
+        UNION ALL
+        SELECT m.* FROM ai_messages m
+        JOIN convo c ON m.message_id = c.parent_message_id
+      )
+      SELECT * FROM convo ORDER BY created_at ASC
+    `).all(messageId) as AiMessage[];
+    // Return only the last N messages
+    return rows.slice(-limit);
+  },
+  getRecentInChannel(db: Db, channelId: string, limit: number): AiMessage[] {
+    return db.prepare(
+      'SELECT * FROM ai_messages WHERE channel_id = ? ORDER BY created_at DESC LIMIT ?'
+    ).all(channelId, limit).reverse() as AiMessage[];
+  },
+  deleteByMessageId(db: Db, messageId: string) {
+    db.prepare('DELETE FROM ai_messages WHERE message_id = ?').run(messageId);
   }
 };

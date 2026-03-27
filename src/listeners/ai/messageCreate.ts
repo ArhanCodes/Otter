@@ -2,14 +2,12 @@ import { ApplyOptions } from '@sapphire/decorators';
 import { Listener, container } from '@sapphire/framework';
 import { Message } from 'discord.js';
 import { aiConfig, aiMessages } from '../../db.js';
-import { env } from '../../env.js';
 import { generateResponse, splitMessage } from '../../lib/ai/chat.js';
 
 @ApplyOptions<Listener.Options>({ event: 'messageCreate' })
 export class AiChatListener extends Listener {
   public async run(message: Message) {
     if (message.author.bot || !message.guild) return;
-    if (!env.AI_API_KEY) return;
 
     const mentionRegex = new RegExp(`<@!?${message.client.user!.id}>`);
     const isMentioned = mentionRegex.test(message.content);

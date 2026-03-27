@@ -37,7 +37,7 @@ export class UserCommand extends Command {
             .setName('model')
             .setDescription('Set the AI model to use')
             .addStringOption((o) =>
-              o.setName('name').setDescription('Model name (e.g. anthropic/claude-sonnet-4, openai/gpt-4o)').setRequired(true)
+              o.setName('name').setDescription('Ollama model name (e.g. llama3.2, mistral, gemma2)').setRequired(true)
             )
         )
         .addSubcommand((sc) =>
